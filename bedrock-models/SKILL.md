@@ -5,30 +5,40 @@ description: "AWS Bedrock model IDs and cross-region inference profiles. Use thi
 
 # AWS Bedrock Model IDs
 
-NEVER guess or invent Bedrock model IDs. Model ID formats are inconsistent across providers and even across models from the same provider. Always use this skill to get the correct ID.
-
-## How to use
-
-1. Read `references/models.md` for the complete model catalogue with verified IDs
-2. If a model is not listed, it may be newer than this skill — use the fallback below
+NEVER guess or invent Bedrock model IDs. They are inconsistent across providers and even across models from the same provider. Read `references/models.md` for the complete list.
 
 ## Staleness fallback
 
-If the model you need is NOT in the reference file, or you suspect data is outdated:
+The CLI is the source of truth — AWS doc pages lag behind the live API.
 
-1. **Run the AWS CLI** (preferred — always authoritative):
-   ```bash
-   aws bedrock list-foundation-models --region <region> --query "modelSummaries[].{id:modelId,name:modelName,provider:providerName}" --output table
-   ```
+```bash
+aws bedrock list-foundation-models --region <region> --query "modelSummaries[].{id:modelId,name:modelName,provider:providerName}" --output table
+```
 
-2. **Check the AWS docs**: https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards.html
-   - Click any model -> scroll to "Programmatic Access" table for exact model IDs and geo inference IDs
+Docs (secondary): https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards.html
 
-## Critical rules
+## AccessDeniedException
 
-- Model IDs are NOT predictable. Some have dates (`-20251001-v1:0`), some don't (`-4-6`), some have `-v1` without `:0`. Do not construct them by pattern.
-- Cross-region geo IDs use a prefix: `us.`, `eu.`, `au.`, `jp.`, `global.` prepended to the base model ID.
-- Not all models support all geo profiles. Check the reference.
-- Context window suffixes (`:24k`, `:128k`, `:300k`) are optional variants — use the base ID unless you specifically need to constrain context.
+If a Bedrock call returns `AccessDeniedException`, the model's Marketplace subscription hasn't been set up. Bedrock auto-subscribes on first invoke if the IAM role has `aws-marketplace:Subscribe` and `aws-marketplace:ViewSubscriptions`.
+
+Providers that bypass Marketplace (no subscription needed): Amazon, DeepSeek, Meta, Mistral AI, OpenAI, Qwen. All others go through Marketplace.
+
+Anthropic additionally requires a one-time "First Time Use" form per account via Bedrock console or `aws bedrock put-use-case-for-model-access`.
+
+Diagnose:
+```bash
+aws bedrock get-foundation-model-availability --model-id <model-id> --region <region>
+```
+
+Fix:
+```bash
+aws bedrock create-foundation-model-agreement \
+  --model-id <model-id> --region <region> \
+  --offer-token "$(aws bedrock list-foundation-model-agreement-offers \
+    --model-id <model-id> --region <region> \
+    --query 'offers[0].offerToken' --output text)"
+```
+
+Reference: https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html
 
 Last verified: 2026-05-31
