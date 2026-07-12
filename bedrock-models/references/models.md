@@ -1,6 +1,6 @@
 # AWS Bedrock Model IDs — Complete Reference
 
-Last generated: 2026-05-31 via `refresh-models.sh`
+Last generated: 2026-06-02 via `refresh-models.sh`
 
 ## Cross-Region Inference
 
@@ -245,7 +245,7 @@ Reference: https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.htm
 
 ## Staleness Warning
 
-This file was last generated on **2026-05-31**.
+This file was last generated on **2026-06-02**.
 
 To regenerate:
 ```bash
